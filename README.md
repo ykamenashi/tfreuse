@@ -25,10 +25,18 @@
 ### tfreuse setup
 
 * If config file does not exist in your home directory, copy it into there, and execute EDITOR.
+* Note: you MUST edit the config file: `~/[.config]/tfreuse-config.bash` , to use this tool.
 
 ### tfreuse prepare
 
-* DO NOT RUN the `terraform init`  automatically.
+* WARNING: cleanup `$CWD/.terraform/*`
+* And, copy `plugins/*` from the directory you determined.
+* this: DO NOT RUN the `terraform init`  automatically.
+
+### tfreuse x / tfreuse exec
+
+1. run `tfreuse prepare`
+1. run `terraform init`
 
 ### tfreuse
 
