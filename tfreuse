@@ -1,0 +1,118 @@
+#!/usr/bin/env bash
+
+NUM_OF_ARGS=$#
+ACTION_STR=$1
+ARGUMENT_STRS=${*:2}
+TFREUSE_CONFIG_FILENAME=tfreuse-config.bash
+THIS_DIR=$(dirname "$0")
+GLOBAL_CONFIG_FILE_PATH=""
+
+if [ -z "$TERRAFORM_BIN" ] ; then
+  TERRAFORM_BIN=$(command -v terraform)
+fi
+
+function usage {
+cat << EOF
+
+$0: **terraform init** wrapper.
+
+for command-line syntax help: see https://github.com/ykamenashi/tfreuse .
+quit.
+
+EOF
+  exit 0
+}
+
+function msgquit {
+  echo "$1"
+  exit 1
+}
+
+function current_tfdir_existing_check {
+  if [ ! -d "./.terraform" ] ; then
+    msgquit "$(pwd)/.terraform : not found. quit."
+  fi
+}
+current_tfdir_existing_check
+
+function seek_tfreuse_config {
+  if [ -d ~/.config ] ; then
+    if [ -f ~/.config/$TFREUSE_CONFIG_FILENAME ] ; then
+      GLOBAL_CONFIG_FILE_PATH=~/.config/$TFREUSE_CONFIG_FILENAME
+      return 0
+    fi
+  elif [ -f ~/$TFREUSE_CONFIG_FILENAME ] ; then
+      GLOBAL_CONFIG_FILE_PATH=~/$TFREUSE_CONFIG_FILENAME
+      return 0
+  fi
+  msgquit "ERROR: not found the config file $TFREUSE_CONFIG_FILENAME . please run the command: $0 setup before EXEC / PREPARE."
+}
+
+function copy_base_config {
+  ARGS=$1
+  PREFIX=~/
+  if [ -d ~/.config ] ; then
+    PREFIX=~/.config
+  fi
+  if [ -n "$ARGS" ] ; then
+    PREFIX=$ARGS
+  fi
+  ONTO_PATH=$PREFIX/$TFREUSE_CONFIG_FILENAME
+  if [ -f "$ONTO_PATH" ] || [ -d "$ONTO_PATH" ] ; then
+    msgquit "$ONTO_PATH: exists. check your env. quit."
+  fi
+  cp "$THIS_DIR/$TFREUSE_CONFIG_FILENAME" "$ONTO_PATH"
+  echo -n '  '
+  echo executed: cp "$THIS_DIR/$TFREUSE_CONFIG_FILENAME" "$ONTO_PATH"
+  exit 0
+}
+
+function cleanup_tf_dir {
+  seek_tfreuse_config
+  echo "LOADING: TF-ReUse config file: $GLOBAL_CONFIG_FILE_PATH"
+  . "$GLOBAL_CONFIG_FILE_PATH"
+  echo "LOADED: ReUse target plug-in dir: $REUSE_TARGET_PLUGIN_DIR"
+cat << EOF
+  Are you ready, for execute THIS:
+    $ rm -rf $(pwd)/.terraform
+  please type, Y for cleanup.
+EOF
+  echo -n '> '
+  read -r ANSWER
+  if [ "$ANSWER" == "Y" ] ; then
+    rm -rf .terraform/
+    mkdir -p .terraform
+    cp -r "$REUSE_TARGET_PLUGIN_DIR" .terraform/
+  else
+    msgquit "ABORT."
+  fi
+}
+
+function getopt {
+  if [ $NUM_OF_ARGS -lt 1 ] ; then
+    usage
+  else
+    case $ACTION_STR in
+        help)
+          usage
+        ;;
+        setup|config)
+          copy_base_config "$ARGUMENT_STRS"
+        ;;
+        prepare)
+          cleanup_tf_dir
+        ;;
+        exec|x)
+          cleanup_tf_dir
+          $TERRAFORM_BIN init
+        ;;
+        *)
+          usage
+        ;;
+    esac
+  fi
+}
+
+getopt
+
+exit 0
