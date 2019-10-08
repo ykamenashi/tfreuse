@@ -3,7 +3,7 @@
 ## What is this
 
 * `tfreuse` is the wrapper of `terraform init` .
-* When work with **terraform modules**, you often encount the scene: MUST EXECUTE the `terraform init`.
+* When work with **terraform modules**, you often encounter the scene: MUST EXECUTE the `terraform init`.
   * With **Remote tfstate** strategy, I really get frustrated the slow, large download for `terraform-provider-google`.
 
 ## The benefits
